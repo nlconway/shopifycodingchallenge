@@ -5,17 +5,17 @@ import java.util.ArrayList;
 
 //Panel displays options to interact with the database
 //Can add image, get specific image by name or all images belonging to user
- class ImageSelectionPanel extends JPanel {
+class ImageSelectionPanel extends JPanel {
     private RepositoryFrame repoFrame;
     private Connector connector;
 
-     ImageSelectionPanel(RepositoryFrame repoFrame, Connector connector) {
+    ImageSelectionPanel(RepositoryFrame repoFrame, Connector connector) {
         this.repoFrame = repoFrame;
         this.connector = connector;
     }
 
     //Add components of image selection panel
-     void populate() {
+    void populate() {
         setLayout(null);
         JLabel addImageUrl = new JLabel();
         addImageUrl.setText("URL");
@@ -31,7 +31,7 @@ import java.util.ArrayList;
         addImageButton.setBounds(275, 50, 165, 25);
 
         JLabel getImage = new JLabel();
-        getImage.setText("Get Image");
+        getImage.setText("Image Name");
         getImage.setBounds(10, 80, 80, 25);
         JTextField getImageText = new JTextField(25);
         getImageText.setBounds(100, 80, 165, 25);
@@ -39,8 +39,8 @@ import java.util.ArrayList;
         getImageButton.setBounds(275, 80, 165, 25);
 
         JLabel getAllImages = new JLabel();
-        getAllImages.setText("Get Images");
-        getAllImages.setBounds(10, 120, 80, 25);
+        getAllImages.setText("Get All Images");
+        getAllImages.setBounds(10, 120, 85, 25);
         JButton getAllImagesButton = new JButton("Get Images");
         getAllImagesButton.setBounds(100, 120, 165, 25);
 

@@ -8,27 +8,26 @@ class Session {
         LOGOUT
     }
 
-     static boolean isValidConnection() {
+    static boolean isValidConnection() {
         return validDatabaseConnection;
     }
 
-     static void setValidConnection(boolean validConnection) {
+    static void setValidConnection(boolean validConnection) {
         Session.validDatabaseConnection = validConnection;
     }
 
-     static User getActiveUser() {
+    static User getActiveUser() {
         return activeUser;
     }
 
-     static Status getStatus() {
+    static Status getStatus() {
         return status;
     }
 
 
-
     //Logging in user, sees if username and password match user
     //If so user is set and status is changed to Login
-     static boolean login(String userName, String password, Connector connector) {
+    static boolean login(String userName, String password, Connector connector) {
         activeUser = connector.loginUser(userName, password);
         if (activeUser != null) {
             status = Status.LOGIN;
@@ -41,7 +40,7 @@ class Session {
 
     //Logging out,
     //Sets status to Logout and user to null
-     static boolean logout() {
+    static boolean logout() {
         status = Status.LOGOUT;
         activeUser = null;
         return true;

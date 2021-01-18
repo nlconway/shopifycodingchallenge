@@ -1,8 +1,5 @@
-import com.sun.javafx.beans.IDProperty;
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -17,20 +14,20 @@ class ImageDisplayPanel extends JPanel {
     private RepositoryFrame repoFrame;
 
 
-     ImageDisplayPanel(String filePath, RepositoryFrame repositoryFrame){
+    ImageDisplayPanel(String filePath, RepositoryFrame repositoryFrame) {
         this.filePath = filePath;
         this.repoFrame = repositoryFrame;
     }
 
 
-     void populate(java.util.List<Image> images){
+    void populate(java.util.List<Image> images) {
         setLayout(null);
         JButton nextImageButton = new JButton("Next Image");
         nextImageButton.setBounds(20, 20, 165, 25);
         imageText = new JLabel();
         imageText.setBounds(20, 50, 80, 25);
 
-        if(index < images.size()) {
+        if (index < images.size()) {
             try {
                 BufferedImage loadedImage = ImageIO.read(new File(filePath + images.get(index).getId()));
                 imageText.setText(images.get(index).getName());
@@ -48,7 +45,7 @@ class ImageDisplayPanel extends JPanel {
         nextImageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent arg0) {
-                if(index < images.size()){
+                if (index < images.size()) {
                     try {
                         remove(imageLabel);
                         BufferedImage loadedImage = ImageIO.read(new File(filePath + images.get(index).getId()));
@@ -61,8 +58,7 @@ class ImageDisplayPanel extends JPanel {
                     } catch (IOException e) {
                         index++;
                     }
-                }
-                else{
+                } else {
                     setVisible(false);
                     repoFrame.removeImageDisplayPanel();
                     repaint();

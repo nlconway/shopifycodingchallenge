@@ -44,7 +44,7 @@ public class RepositoryFrame extends JFrame {
         return imageDisplayPanel;
     }
 
-    void removeImageDisplayPanel(){
+    void removeImageDisplayPanel() {
         getContentPane().remove(imageDisplayPanel);
         imageDisplayPanel = null;
     }
@@ -60,16 +60,17 @@ public class RepositoryFrame extends JFrame {
     public LoginPanel getLoginPanel() {
         return loginPanel;
     }
-    @Override
-    public void repaint(){
 
-        if(Session.getStatus().equals(Session.Status.LOGIN) && !imageSelectionPanel.isVisible()){
+    @Override
+    public void repaint() {
+
+        if (Session.getStatus().equals(Session.Status.LOGIN) && !imageSelectionPanel.isVisible()) {
             remove(loginPanel);
             add(imageSelectionPanel);
             imageSelectionPanel.setVisible(true);
             loginPanel.setVisible(false);
         }
-        if(Session.getStatus().equals(Session.Status.LOGOUT) && !loginPanel.isVisible()){
+        if (Session.getStatus().equals(Session.Status.LOGOUT) && !loginPanel.isVisible()) {
             remove(imageSelectionPanel);
             add(loginPanel);
             loginPanel.setVisible(true);

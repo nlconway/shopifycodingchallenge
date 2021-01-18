@@ -7,13 +7,13 @@ class LoginPanel extends JPanel {
     private RepositoryFrame repoFrame;
     private Connector connector;
 
-     LoginPanel(RepositoryFrame repoFrame, Connector connector) {
+    LoginPanel(RepositoryFrame repoFrame, Connector connector) {
         this.repoFrame = repoFrame;
         this.connector = connector;
     }
 
     //Add components of login panel
-     void populate() {
+    void populate() {
         setLayout(null);
         JButton loginButton = new JButton("Login");
         loginButton.setBounds(10, 80, 80, 25);
