@@ -1,7 +1,12 @@
 public class MainDemo {
-    public static WebPage webPage;
+    private static WebPage webPage;
     public static void main(String[] args){
-        webPage = new WebPage("TESTREPO", "C:\\Users\\Natalie\\Documents\\ShopifyFolder\\");
+
+        //Pass name and filepath to Webpage creator
+        //In actual application should not be hard coded
+        String name = "TESTREPO" ;
+        String filePath = "C:\\Users\\Natalie\\Documents\\ShopifyFolder\\";
+        webPage = new WebPage(name, filePath);
 
     }
 }

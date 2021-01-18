@@ -2,16 +2,17 @@ public class Image {
     private int id;
     private String address;
     private String name;
-    private String userId;
     private User user;
-    public Image(int id, String address, String name, User user) {
+
+    //Image object, has an id, address(url), name and user who's added
+     Image(int id, String address, String name, User user) {
         this.id = id;
         this.address = address;
         this.name = name;
         this.user = user;
     }
 
-    public int getId() {
+     int getId() {
         return id;
     }
 
@@ -19,21 +20,11 @@ public class Image {
         return address;
     }
 
-
-    public String getName() {
+     String getName() {
         return name;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-
-    public void setName(String name) {
-        this.name = name;
+    public User getUser() {
+        return user;
     }
 }

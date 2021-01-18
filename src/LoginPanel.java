@@ -1,17 +1,19 @@
-import oracle.jrockit.jfr.JFR;
-
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class LoginPanel extends JPanel {
-    JFrame repoFrame;
+//Login Panel, User enters username and password
+class LoginPanel extends JPanel {
+    private RepositoryFrame repoFrame;
+    private Connector connector;
 
-    public LoginPanel(){
-
-    }
-    public void populate(RepositoryFrame repoFrame, ImageSelectionPanel imagePanel, Connector connector){
+     LoginPanel(RepositoryFrame repoFrame, Connector connector) {
         this.repoFrame = repoFrame;
+        this.connector = connector;
+    }
+
+    //Add components of login panel
+     void populate() {
         setLayout(null);
         JButton loginButton = new JButton("Login");
         loginButton.setBounds(10, 80, 80, 25);
@@ -32,14 +34,14 @@ public class LoginPanel extends JPanel {
         add(passWordText);
         add(loginButton);
 
+        //On selecting login, Session is called to change state
+        //If login successful Session state is changed and the frame repaints
         loginButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent arg0) {
-//               connector.login(userNameText.getText(), passWordText.getText());
-                Session.login(userNameText.getText(), passWordText.getText() , connector);
+                Session.login(userNameText.getText(), passWordText.getText(), connector);
                 if (Session.getStatus().equals(Session.Status.LOGIN)) {
-                    remove();
-                    imagePanel.setVisible(true);
+                    repoFrame.repaint();
                 }
             }
         });
@@ -47,7 +49,4 @@ public class LoginPanel extends JPanel {
         setVisible(true);
     }
 
-    private void remove(){
-        repoFrame.getContentPane().remove(this);
-    }
 }

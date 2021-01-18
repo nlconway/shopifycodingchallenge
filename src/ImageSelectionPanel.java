@@ -3,14 +3,19 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
-public class ImageSelectionPanel extends JPanel {
-//    ImageDisplayPanel imageDisplayPanel;
-    public ImageSelectionPanel(){
+//Panel displays options to interact with the database
+//Can add image, get specific image by name or all images belonging to user
+ class ImageSelectionPanel extends JPanel {
+    private RepositoryFrame repoFrame;
+    private Connector connector;
 
+     ImageSelectionPanel(RepositoryFrame repoFrame, Connector connector) {
+        this.repoFrame = repoFrame;
+        this.connector = connector;
     }
 
-    public void populate(RepositoryFrame repoFrame, ImageDisplayPanel imageDisplayPanel, Connector connector){
-//        this.imageDisplayPanel = imageDisplayPanel;
+    //Add components of image selection panel
+     void populate() {
         setLayout(null);
         JLabel addImageUrl = new JLabel();
         addImageUrl.setText("URL");
@@ -39,6 +44,9 @@ public class ImageSelectionPanel extends JPanel {
         JButton getAllImagesButton = new JButton("Get Images");
         getAllImagesButton.setBounds(100, 120, 165, 25);
 
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.setBounds(10, 150, 165, 25);
+
         add(addImageUrl);
         add(addImageUrlText);
         add(addImage);
@@ -49,23 +57,31 @@ public class ImageSelectionPanel extends JPanel {
         add(getImageButton);
         add(getAllImages);
         add(getAllImagesButton);
+        add(logoutButton);
 
+        //Checks if session is logged in (panel shouldn't be visible but extra security)
+        //Passes image url and name to connector,
+        //If adding image was successful sets text blank again
         addImageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent arg0) {
                 if (Session.getStatus().equals(Session.Status.LOGOUT)) return;
-                if(connector.addImageFromUrl(addImageUrlText.getText(), addImageText.getText()) > 0) {
+                if (connector.addImageFromUrl(addImageUrlText.getText(), addImageText.getText()) > 0) {
                     addImageUrlText.setText("");
                     addImageText.setText("");
                 }
+                repoFrame.repaint();
             }
         });
 
+        //Using the name passed, checks if there is any image by the name belonging to the user
+        //If so text is set to blank
+        //Display panel is created populated with the image
         getImageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent arg0) {
                 if (Session.getStatus().equals(Session.Status.LOGOUT)) return;
-                Image image = connector.getImage(getImageText.getText(), Session.getUser().getId());
+                Image image = connector.getImage(getImageText.getText(), Session.getActiveUser().getId());
                 if (image != null) {
                     java.util.List<Image> imageList = new ArrayList<>();
                     imageList.add(image);
@@ -76,17 +92,30 @@ public class ImageSelectionPanel extends JPanel {
             }
         });
 
+        //Gets all images via the connector,
+        //Gets the new display panel from the main frame
+        //Populates the new frame wth the image list
         getAllImagesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent arg0) {
                 if (Session.getStatus().equals(Session.Status.LOGOUT)) return;
-                java.util.List<Image> imageList = connector.getImages(Session.getUser().getId());
+                java.util.List<Image> imageList = connector.getImages(Session.getActiveUser().getId());
                 ImageDisplayPanel imageDisplayPanel = repoFrame.getNewImageDisplayPanel();
                 imageDisplayPanel.populate(imageList);
+                repoFrame.repaint();
+            }
+        });
+
+        logoutButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                Session.logout();
+                repoFrame.repaint();
             }
         });
 
         repaint();
         setVisible(false);
     }
+
 }

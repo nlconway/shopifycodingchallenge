@@ -10,13 +10,15 @@ import java.util.List;
 public class Connector {
     private String repositoryName;
     private String filePath;
-    Statement statement;
-    Connection con;
-    int sqlCode = 0;
-    String sqlState = "00000";
+    private Statement statement;
+    private Connection con;
+    private int sqlCode = 0;
+    private String sqlState = "00000";
     Boolean validConnection = false;
 
-    public Connector(String repositoryName, String filePath, String url, String username, String password) {
+    //Registers driver
+    //Logins using postgres credentials
+    Connector(String repositoryName, String filePath, String url, String username, String password) {
         this.repositoryName = repositoryName;
         this.filePath = filePath;
 
@@ -24,34 +26,33 @@ public class Connector {
         try {
             DriverManager.registerDriver(new org.postgresql.Driver());
             con = DriverManager.getConnection(url, username, password);
-             statement = con.createStatement ( ) ;
-            if(con != null) validConnection = true;
-        } catch (Exception cnfe) {
-            System.out.print("FAILED CONNECTION");
-            System.out.println("Class not found");
-            validConnection = false;
+            statement = con.createStatement();
+            if (con != null) Session.setValidConnection(true);
+        } catch (Exception e) {
+            System.out.println("Invalid connection credentials");
+            Session.setValidConnection(false);
         }
+        Session.setValidConnection(true);
 
-        validConnection = true;
 
     }
 
-    public boolean create() {
+    //Creates image table in database
+    //Creates user table in database
+    //If folder given by path does not exist, creates folder
+    //If fails returns false
+    boolean create() {
 
         // Creating a table
-        if (!validConnection) {
+        if (!Session.isValidConnection()) {
             System.out.print("Can't create, invalid connection");
-            return false;}
+            return false;
+        }
         try {
             statement = con.createStatement();
-            String createSQL = "CREATE TABLE " + repositoryName + "users (id SERIAL, userName VARCHAR (25), firstName VARCHAR (25) , lastName VARCHAR (25), password VARCHAR (25), PRIMARY KEY (id));";
-//                    + "ALTER TABLE " + repositoryName + "users AUTO_INCREMENT=100;";
-            System.out.println(createSQL);
+            String createSQL = "CREATE TABLE " + repositoryName + "users (id SERIAL, userName VARCHAR (25) UNIQUE, firstName VARCHAR (25) , lastName VARCHAR (25), password VARCHAR (25), PRIMARY KEY (id));";
             statement.executeUpdate(createSQL);
-            System.out.println("Creating next table");
-            createSQL = "CREATE TABLE " + repositoryName + " (id SERIAL, address VARCHAR (100), name VARCHAR (25), userId int NOT NULL, PRIMARY KEY (id), FOREIGN KEY (userId) REFERENCES " + repositoryName + "users(id));";
-//                    + "ALTER TABLE " + repositoryName + " AUTO_INCREMENT=100;";
-            System.out.println(createSQL);
+            createSQL = "CREATE TABLE " + repositoryName + " (id SERIAL, address VARCHAR (200), name VARCHAR (25), userId int NOT NULL, PRIMARY KEY (id), UNIQUE(name, userId), FOREIGN KEY (userId) REFERENCES " + repositoryName + "users(id));";
             statement.executeUpdate(createSQL);
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
@@ -60,29 +61,32 @@ public class Connector {
             System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
             return false;
         }
+        File theDir = new File(filePath);
+        if (!theDir.exists()) {
+            theDir.mkdirs();
+        }
         return true;
     }
 
-    public boolean delete() {
+
+    //Deletes tables from database
+    //Deletes folder that contains images locally
+    //Closes the connections
+    boolean delete() {
         try {
             // Dropping a table
             String dropSQL = "DROP TABLE " + repositoryName;
-            System.out.println(dropSQL);
             statement.executeUpdate(dropSQL);
-            System.out.println("DONE");
-             dropSQL = "DROP TABLE " + repositoryName + "users";
-            System.out.println(dropSQL);
+            dropSQL = "DROP TABLE " + repositoryName + "users";
             statement.executeUpdate(dropSQL);
-            System.out.println("DONE");
             statement.close();
             con.close();
-            return true;
+            File file = new File(filePath);
+            return file.delete();
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
-
-            // Your code to handle errors comes here;
-            // something more meaningful than a print would be good
+            System.out.println("Error deleting tables");
             System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
             return false;
         }
@@ -90,31 +94,22 @@ public class Connector {
 
     //Add URL to database
     //Save image to database
-    //Returns ID
-    public int addImageFromUrl(String imageUrl, String name) {
+    //Returns ID of image or 0 if failed
+    int addImageFromUrl(String imageUrl, String name) {
+        int imageId = 0;
 
         try {
-//            URL imageUrl = new URL(url);
-//            InputStream in = new BufferedInputStream(imageUrl.openStream());
-//            ByteArrayOutputStream out = new ByteArrayOutputStream();
-//            byte[] buf = new byte[1024];
-//            int n = 0;
-//            while (-1 != (n = in.read(buf))) {
-//                out.write(buf, 0, n);
-//            }
-//            out.close();
-//            in.close();
-//            byte[] response = out.toByteArray();
-//
-//            FileOutputStream fos = new FileOutputStream("C://" + name);
-//            fos.write(response);
-//            fos.close();
-            URL url = new URL(imageUrl);
-            String fileName = url.getFile();
-//            String destName = "./figures" + fileName.substring(fileName.lastIndexOf("/"));
-            String destName = filePath + name;
+            String insertSQL = "INSERT INTO " + repositoryName + " (address, name, userId) VALUES "
+                    + "(  \'" + imageUrl + "\' , \'" + name + "\', " + Session.getActiveUser().getId() + "  ) ";
+            statement.executeUpdate(insertSQL);
+            String querySQL = "SELECT * FROM " + repositoryName + " WHERE name = \'" + name + "\' AND userId = " + Session.getActiveUser().getId() + ";";
+            java.sql.ResultSet rs = statement.executeQuery(querySQL);
+            if (rs.next()) imageId = rs.getInt("id");
+            else return 0;
 
-            System.out.println(destName);
+
+            URL url = new URL(imageUrl);
+            String destName = filePath + imageId;
 
             InputStream is = url.openStream();
             OutputStream os = new FileOutputStream(destName);
@@ -129,61 +124,58 @@ public class Connector {
             is.close();
             os.close();
         } catch (IOException e) {
-            System.out.println("Failed in adding image to folder: " + e);
-            return 0;
-        }
-        try {
-            String insertSQL = "INSERT INTO " + repositoryName + " (address, name, userId) VALUES "
-                    + "(  \'" + imageUrl + "\' , \'" + name + "\', " + Session.getUser().getId() + "  ) ";
-            System.out.println(insertSQL);
-            statement.executeUpdate(insertSQL);
-            System.out.println("DONE");
-            String querySQL = "SELECT * from " + repositoryName + " WHERE name = \'" + name + "\'";
-            java.sql.ResultSet rs = statement.executeQuery(querySQL);
-            if (rs.next()) {
-                return rs.getInt("id");
+            //Failed to download image, Delete info from database
+            String querySQL = "DELETE FROM " + repositoryName + " WHERE id = " + imageId + ";";
+            try {
+                statement.executeUpdate(querySQL);
+            } catch (SQLException ex) {
+                return 0;
             }
-
+            return 0;
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
-
-            // Your code to handle errors comes here;
-            // something more meaningful than a print would be good
-//            System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
-
-            System.out.println("Failed in adding image to database");
+            System.out.println("Error adding image to database");
+            System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
             return 0;
         }
-        return 0;
-        //Add image to database
+        return imageId;
     }
 
     //Remove image from database
     //Delete from folder
-    //Return true upon success
+    //Return true upon success, false upon fail
     public boolean deleteImage(int id) {
+        boolean success = true;
         try {
             String querySQL = "DELETE FROM " + repositoryName + " WHERE id = " + id + ";";
-            System.out.println(querySQL);
             statement.executeUpdate(querySQL);
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
+            System.out.println("Error deleting image from table");
             System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
-            return false;
+            success = false;
         }
-        return true;
+        try {
+            File file = new File(filePath + id);
+            file.delete();
+        } catch (Exception e) {
+            System.out.println("Error deleting file from folder");
+            success = false;
+        }
+        return success;
     }
 
+    //Delete user that matches userid
     public boolean deleteUser(int id) {
         try {
             String querySQL = "DELETE FROM " + repositoryName + "users WHERE id = " + id + ";";
-            System.out.println(querySQL);
             statement.executeUpdate(querySQL);
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
+            System.out.println("Error deleting user");
             System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
             return false;
         }
@@ -191,11 +183,10 @@ public class Connector {
     }
 
     //Searches database using id, returns object of url
-    public Image getImage(String name, int userId) {
+    Image getImage(String name, int userId) {
 
         try {
             String querySQL = "SELECT * from " + repositoryName + "users WHERE id = " + userId + ";";
-            System.out.println(querySQL);
             java.sql.ResultSet rs = statement.executeQuery(querySQL);
             User user = null;
             if (rs.next()) {
@@ -204,7 +195,6 @@ public class Connector {
             if (user == null) return null;
 
             querySQL = "SELECT * from " + repositoryName + " WHERE name = \'" + name + "\' AND userId = " + userId + ";";
-            System.out.println(querySQL);
             rs = statement.executeQuery(querySQL);
             if (rs.next()) {
                 return new Image(rs.getInt("id"), rs.getString("address"), rs.getString("name"), user);
@@ -212,24 +202,17 @@ public class Connector {
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
-            System.out.println("Failure in loading image");
-//            System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
+            System.out.println("Error getting image info from table");
+            System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
             return null;
         }
         return null;
     }
 
-    //Gets all images for user id
-    public List<Image> getImages(int userId) {
+    //Gets all images assigned to user
+    List<Image> getImages(int userId) {
         List<Image> imageList = new ArrayList<>();
         try {
-//            String querySQL = "SELECT * from " + repositoryName + "user WHERE id = " + userId + ";";
-//            java.sql.ResultSet rs = statement.executeQuery(querySQL);
-//            User user = null;
-//            if (rs.next()) {
-//                user = new User(rs.getInt("id"), rs.getString("firstName"), rs.getString("lastName"), rs.getString("userName"));
-//
-//            }
             User user = getUser(userId);
             if (user == null) return imageList;
 
@@ -242,16 +225,17 @@ public class Connector {
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
+            System.out.println("Error getting image info from tables");
             System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
             return null;
         }
         return imageList;
     }
 
-    public User getUser(int id) {
+    //Returns user that matches id
+    User getUser(int id) {
         try {
             String querySQL = "SELECT * from " + repositoryName + "users WHERE id = " + id + ";";
-            System.out.println(querySQL);
             java.sql.ResultSet rs = statement.executeQuery(querySQL);
             if (rs.next()) {
                 return new User(rs.getInt("id"), rs.getString("firstName"), rs.getString("lastName"), rs.getString("userName"));
@@ -259,17 +243,17 @@ public class Connector {
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
+            System.out.println("Error getting user info from table");
             System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
-            System.out.println("No User Found");
             return null;
         }
         return null;
     }
 
-    public User loginUser(String userName, String password) {
+    //Returns User that matches username and password
+    User loginUser(String userName, String password) {
         try {
             String querySQL = "SELECT * from " + repositoryName + "users WHERE userName = \'" + userName + "\' AND password = \'" + password + "\'";
-            System.out.println(querySQL);
             java.sql.ResultSet rs = statement.executeQuery(querySQL);
             if (rs.next()) {
                 return new User(rs.getInt("id"), rs.getString("firstName"), rs.getString("lastName"), rs.getString("userName"));
@@ -277,15 +261,17 @@ public class Connector {
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
+            System.out.println("Error getting user info from table");
             System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
             return null;
         }
         return null;
     }
 
-    public boolean addUser(String firstName, String lastName, String userName, String password) {
+
+    //Adds user to database using firstname, lastname, username and password
+    boolean addUser(String firstName, String lastName, String userName, String password) {
         try {
-            System.out.println("Valid Connection: " + validConnection);
             String insertSQL = "INSERT INTO " + repositoryName + "users (userName, firstName, lastName, password) VALUES ( \'" +
                     userName + "\' , \'" + firstName + "\', \'" + lastName + "\', \'" + password + "\' ) ";
             statement.executeUpdate(insertSQL);
@@ -294,8 +280,7 @@ public class Connector {
         } catch (SQLException e) {
             sqlCode = e.getErrorCode(); // Get SQLCODE
             sqlState = e.getSQLState(); // Get SQLSTATE
-            // Your code to handle errors comes here;
-            // something more meaningful than a print would be good
+            System.out.println("Error adding user info to database");
             System.out.println("Code: " + sqlCode + "  sqlState: " + sqlState);
             return false;
         }

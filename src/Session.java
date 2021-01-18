@@ -1,43 +1,50 @@
-public class Session {
-    private static User user;
+class Session {
+    private static User activeUser;
     private static Status status = Status.LOGOUT;
+    private static boolean validDatabaseConnection = false;
 
-    public Session(String userName, String password){
-    }
-
-    public static User getUser() {
-        return user;
-    }
-
-    public static Status getStatus() {
-        return status;
-    }
-
-    public enum Status{
+    public enum Status {
         LOGIN,
         LOGOUT
     }
 
-    public static boolean login(String userName, String password, Connector connector){
-        user = connector.loginUser(userName, password);
-        if(user!= null){
+     static boolean isValidConnection() {
+        return validDatabaseConnection;
+    }
+
+     static void setValidConnection(boolean validConnection) {
+        Session.validDatabaseConnection = validConnection;
+    }
+
+     static User getActiveUser() {
+        return activeUser;
+    }
+
+     static Status getStatus() {
+        return status;
+    }
+
+
+
+    //Logging in user, sees if username and password match user
+    //If so user is set and status is changed to Login
+     static boolean login(String userName, String password, Connector connector) {
+        activeUser = connector.loginUser(userName, password);
+        if (activeUser != null) {
             status = Status.LOGIN;
             return true;
-        }
-        else{
+        } else {
             status = Status.LOGOUT;
             return false;
         }
     }
 
-    public static boolean logout(){
+    //Logging out,
+    //Sets status to Logout and user to null
+     static boolean logout() {
         status = Status.LOGOUT;
-        user = null;
+        activeUser = null;
         return true;
-    }
-
-    public int getUserId(){
-        return user.getId();
     }
 
 
